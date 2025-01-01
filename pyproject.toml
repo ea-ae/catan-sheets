@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "catan"
+package-mode = false
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+google-cloud-firestore = "^2.19.0"
+discord-py = "^2.4.0"
+python-dotenv = "^1.0.1"
+requests = "^2.32.3"
+google-auth = "^2.37.0"
+google-auth-oauthlib = "^1.2.1"
+google-auth-httplib2 = "^0.2.0"
+google-api-python-client = "^2.156.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
