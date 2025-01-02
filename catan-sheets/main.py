@@ -70,15 +70,15 @@ async def on_message_delete(message: discord.Message):
             break
 
 
-# trash can reaction deletes from our excel
+# trash can reaction "deletes" from our excel
 @bot.event
 async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
     if user == bot.user:
         return
 
-    if reaction.emoji == "🗑️":
-        message = reaction.message
-        print(message.content)
+    if reaction.emoji == "🗑️" and reaction.message.author == bot.user:
+        reference_message_id = reaction.message.reference.message_id  # type: ignore
+        print(reaction.message.content)
 
 
 message_id_circbuf = collections.deque(maxlen=100)
@@ -179,9 +179,10 @@ just disregard this message.",
     sheets.update(gapi_creds, div, game_data)
 
     await message.add_reaction("🤖")
-    await message.channel.send(
+    sent_message = await message.channel.send(
         game_data.message(author=message.author), reference=message
     )
+    # await sent_message.add_reaction("🗑️")
 
 
 def query_colonist(game: str):

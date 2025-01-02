@@ -63,7 +63,7 @@ class GameData:
 
         # zip one metadata element per scores row to the start
         return [
-            [md_row] + list(score)
+            [md_row] + [score.scoreboard_name, score.score]
             for md_row, score in zip(self.metadata.serialize(), self.scores)
         ]
 
@@ -153,8 +153,9 @@ def update(creds, div: str, game_data: GameData):
     )
     existing_rows = res.get("values", [])
 
-    is_duplicate = game_data.metadata.replay_link in [row[0] for row in existing_rows]
-    game_data.metadata.is_duplicate = is_duplicate
+    if len(existing_rows) > 0:
+        is_duplicate = game_data.metadata.replay_link in [row[0] for row in existing_rows]
+        game_data.metadata.is_duplicate = is_duplicate
 
     first_empty_row = STARTING_DATA_ENTRY_ROW + len(existing_rows)
     last_col = add_char(metadata_col, 3)
@@ -175,8 +176,6 @@ def update(creds, div: str, game_data: GameData):
         )
         .execute()
     )
-
-    return is_duplicate
 
 
 def add_char(char: str, add: int):
