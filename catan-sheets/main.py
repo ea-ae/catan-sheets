@@ -81,11 +81,12 @@ async def process_message(message: discord.Message):
     game_players = data["eventHistory"]["endGameState"]["players"]
 
     members = message.guild.members  # type: ignore
+    gapi_creds = sheets.get_credentials()
 
     for player in game_players.values():
         name = colors_to_names[player["color"]]
 
-        discord_name = sheets.translate_name(name)
+        discord_name = sheets.translate_name(gapi_creds, name)
 
         discord_user = None
         if discord_name is not None:
@@ -114,7 +115,7 @@ async def process_message(message: discord.Message):
         )
 
     if len(sheet_data) == 4:
-        sheets.update(div, sheet_data)
+        sheets.update(gapi_creds, div, sheet_data)
 
     await message.channel.send("\n".join(msg))
 

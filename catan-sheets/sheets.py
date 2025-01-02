@@ -18,7 +18,6 @@ NAMES_TAB_NAME = "'All Divisions Players'"
 NAMES_RANGES = ["B4:C", "F4:G"]
 
 
-@cache
 def get_credentials():
     credential = ServiceAccountCredentials.from_json_keyfile_name(
         SERVICE_ACCOUNT_KEY_FILE, SCOPE
@@ -29,7 +28,6 @@ def get_credentials():
     return credential
 
 
-@cache
 def get_service(credentials):
     return discovery.build("sheets", "v4", credentials=credentials)
 
@@ -52,7 +50,7 @@ def fetch_member_names(service):
 memoized_discord_to_colonist = {}
 
 
-def translate_name(name):
+def translate_name(credentials, name):
     credentials = get_credentials()
     service = get_service(credentials)
 
@@ -67,8 +65,7 @@ def translate_name(name):
 
 
 
-def update(div: int, data: list[list[str]]):
-    credentials = get_credentials()
+def update(credentials, div: int, data: list[list[str]]):
     service = get_service(credentials)
 
     sheet = service.spreadsheets()
