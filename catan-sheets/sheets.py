@@ -164,8 +164,6 @@ def update(creds, div: str, game_data: GameData):
         f"{DATA_ENTRY_TAB_NAME}!{metadata_col}{first_empty_row}:{last_col}{last_row}"
     )
 
-    print(game_data.serialize())
-
     (
         sheet.values()
         .update(

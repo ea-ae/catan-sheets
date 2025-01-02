@@ -36,6 +36,22 @@ ERR_CHANNEL = 1324202972997091480
 COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\()[\]\n]+)"
 
 
+handled_replay_messages: set[int] = set()
+message_id_to_replay_owner: dict[int, str] = {}
+
+
+# class GameView(discord.ui.View):
+#     @discord.ui.button(label="Delete", style=discord.ButtonStyle.danger)
+#     async def on_delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+#         owner = message_id_to_replay_owner.get(interaction.message.id) # type: ignore
+#         if owner is not None:
+
+#             await interaction.response.send_message("The replay has been deleted.", ephemeral=True)
+#             return
+
+#         await interaction.response.send_message("The replay can only be deleted by the submitter.", ephemeral=True)
+
+
 @bot.event
 async def on_message(message: discord.Message):
     try:
@@ -50,24 +66,22 @@ async def on_message(message: discord.Message):
 async def on_message_edit(_: discord.Message, after: discord.Message):
     try:
         # if bot already reacted to message, then it's valid; ignore
-        for reaction in after.reactions:
-            async for user in reaction.users():
-                if bot.user is None or user == bot.user.id:
-                    return
+        if after.id in handled_replay_messages:
+            return
 
-        await process_message(after)
+        await process_message(after, is_edit=True)
     except Exception:
         err = traceback.format_exc()
         print(err)
         await bot.get_channel(ERR_CHANNEL).send(f"Error: {err}")  # type: ignore
 
 
-@bot.event
-async def on_message_delete(message: discord.Message):
-    async for msg in message.channel.history(limit=15):
-        if msg.reference is not None and msg.reference.message_id == message.id:
-            await msg.add_reaction("🗑️")
-            break
+# @bot.event
+# async def on_message_delete(message: discord.Message):
+#     async for msg in message.channel.history(limit=15):
+#         if msg.reference is not None and msg.reference.message_id == message.id:
+#             await msg.add_reaction("🗑️")
+#             break
 
 
 # trash can reaction "deletes" from our excel
@@ -81,10 +95,10 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
         print(reaction.message.content)
 
 
-message_id_circbuf = collections.deque(maxlen=100)
+message_id_circbuf = collections.deque(maxlen=100)  # to prevent duplicate events
 
 
-async def process_message(message: discord.Message):
+async def process_message(message: discord.Message, is_edit=False):
     if message.channel.id in DIV1_CHANNELS:
         div = "1"
     elif message.channel.id in DIV2_CHANNELS:
@@ -95,7 +109,7 @@ async def process_message(message: discord.Message):
     if message.author == bot.user:
         return
 
-    if message.id in message_id_circbuf:
+    if message.id in message_id_circbuf and not is_edit:
         # we somehow received a duplicate message event! skip it
         return
     message_id_circbuf.append(message.id)
@@ -158,7 +172,9 @@ just disregard this message.",
         score = sum((settles, cities * 2, vp_devs, largest_army * 2, longest_road * 2))
 
         fallback_name = discord_name if discord_name else name
-        display_name = f"{name} ({discord_user.mention if discord_user else '@' + fallback_name})"
+        display_name = (
+            f"{name} ({discord_user.mention if discord_user else '@' + fallback_name})"
+        )
         scoreboard_name = (
             discord_name if discord_name else fallback_name + " (FALLBACK)"
         )
@@ -179,6 +195,7 @@ just disregard this message.",
     sheets.update(gapi_creds, div, game_data)
 
     await message.add_reaction("🤖")
+    handled_replay_messages.add(message.id)
     sent_message = await message.channel.send(
         game_data.message(author=message.author), reference=message
     )
