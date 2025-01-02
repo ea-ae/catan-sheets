@@ -1,3 +1,5 @@
+import sheets
+
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -5,8 +7,10 @@ import os
 import re
 import requests
 import traceback
-import sheets
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
+import collections
+
 
 load_dotenv()
 
@@ -67,6 +71,23 @@ async def on_message_delete(message: discord.Message):
             break
 
 
+# trash can reaction deletes from our excel
+@bot.event
+async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
+    if user == bot.user:
+        return
+
+    if reaction.emoji == "🗑️":
+        message = reaction.message
+        print(message.content)
+
+        # gapi_creds = sheets.get_creds()
+        # members = message.guild.members
+
+
+message_id_circbuf = collections.deque(maxlen=100)
+
+
 async def process_message(message: discord.Message):
     if message.channel.id in DIV1_CHANNELS:
         div = "1"
@@ -77,6 +98,11 @@ async def process_message(message: discord.Message):
 
     if message.author == bot.user:
         return
+    
+    if message.id in message_id_circbuf:
+        # we somehow received a duplicate message event! skip it
+        return
+    message_id_circbuf.append(message.id)
 
     if message.content == "ping":
         await message.channel.send("pong", reference=message)  # type: ignore
@@ -85,7 +111,9 @@ async def process_message(message: discord.Message):
     if "gameId=" in message.content:
         await message.channel.send(
             "Please post a replay link in the /replay/abcdefg format instead of /replay?gameId=12345.\
-            \nTo do this, press the share button in the replay view (located in the top-right, above the 'Open Stats' button on PC).",
+            \nTo do this, press the share button in the replay view (located in the top-right, above the 'Open Stats' button on PC).\
+            \n**PS:** In case the lobby for this game was created manually by a non-premium user, the bot can't view it. In that case, \
+just disregard this message.",
             reference=message,
         )
         return
@@ -115,6 +143,11 @@ async def process_message(message: discord.Message):
     members = message.guild.members  # type: ignore
     gapi_creds = sheets.get_creds()
 
+    if played_at < datetime.now(tz=pytz.UTC) - timedelta(hours=4):
+        msg.append('*⚠️ Warning: this game was played more than 4 hours ago.*')
+
+    msg.append("")
+
     for player in game_players.values():
         name = colors_to_names[player["color"]]
 
@@ -143,11 +176,14 @@ async def process_message(message: discord.Message):
             f"{name} ({discord_user.mention if discord_user else '@' + fallback_name}): {vp} VPs"
         )
         sheet_data.append(
-            [discord_name if discord_name else fallback_name + " (FALLBACK)", vp]
+            ["", discord_name if discord_name else fallback_name + " (FALLBACK)", vp]
         )
+    
+    # add metadata
+    sheet_data[0][0] = f"https://colonist.io/replay/{slug_matches[0]}"
+    sheet_data[1][0] = played_at.isoformat()
 
-    if len(sheet_data) == 4:
-        sheets.update(gapi_creds, div, sheet_data)
+    sheets.update(gapi_creds, div, sheet_data)
 
     await message.add_reaction("🤖")
     await message.channel.send("\n".join(msg), reference=message)

@@ -7,11 +7,11 @@ SCOPE = "https://www.googleapis.com/auth/spreadsheets"
 SERVICE_ACCOUNT_KEY_FILE = "service_account_key.json"
 SPREADSHEET_ID = "1U7uKsuO2l1SxT3qZSRmdRdX1apjm81pRsnYtFcxMGQQ"
 
-STARTING_DATA_ENTRY_ROW = 3
+STARTING_DATA_ENTRY_ROW = 4
 DATA_ENTRY_TAB_NAME = "Internal"
 NAMES_TAB_NAME = "'All Divisions Players'"
 NAMES_RANGES = ["B4:C", "F4:G"]
-DIV_COLS = {"1": "B", "2": "I"}
+DIV_COLS = {"1": "A", "2": "H"}
 
 
 def get_creds():
@@ -57,13 +57,21 @@ def translate_name(creds, name):
 
 
 def update(creds, div: str, data: list[list[str]]):
+    if len(data) != 4:
+        raise Exception(f"sheet data invalid {data}")
+
+    if any(len(x) != 3 for x in data):
+        raise Exception(f"sheet data row invalid {data}")
+
     service = get_service(creds)
 
     sheet = service.spreadsheets()
 
-    div_col = DIV_COLS[div]
+    first_div_col = DIV_COLS[div]
+    # first row is metadata, so when checking for empty rows, skip it
+    real_first_col = add_char(first_div_col, 1)
     range_to_read = (
-        f"{DATA_ENTRY_TAB_NAME}!{div_col}{STARTING_DATA_ENTRY_ROW}:{div_col}"
+        f"{DATA_ENTRY_TAB_NAME}!{real_first_col}{STARTING_DATA_ENTRY_ROW}:{real_first_col}"
     )
     res = (
         sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=range_to_read).execute()
@@ -71,8 +79,8 @@ def update(creds, div: str, data: list[list[str]]):
     vals = res.get("values", [])
 
     first_empty_row = STARTING_DATA_ENTRY_ROW + len(vals)
-    last_col = chr((ord(div_col) - ord("A") + len(data[0])) % 26 + ord("A"))
-    range_to_write = f"{DATA_ENTRY_TAB_NAME}!{div_col}{first_empty_row}:{last_col}{first_empty_row + len(data)}"
+    last_col = add_char(first_div_col, len(data[0]))
+    range_to_write = f"{DATA_ENTRY_TAB_NAME}!{first_div_col}{first_empty_row}:{last_col}{first_empty_row + len(data)}"
 
     (
         sheet.values()
@@ -84,3 +92,7 @@ def update(creds, div: str, data: list[list[str]]):
         )
         .execute()
     )
+
+
+def add_char(char: str, add: int):
+    return chr((ord(char) - ord("A") + add) % 26 + ord("A"))
