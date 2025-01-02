@@ -1,54 +1,97 @@
-import os.path
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from oauth2client.service_account import ServiceAccountCredentials
+from apiclient import discovery
+from functools import cache
 
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SCOPE = "https://www.googleapis.com/auth/spreadsheets"
+SERVICE_ACCOUNT_KEY_FILE = "service_account_key.json"
 SPREADSHEET_ID = "1U7uKsuO2l1SxT3qZSRmdRdX1apjm81pRsnYtFcxMGQQ"
 
+DATA_ENTRY_TAB_NAME = "Internal"
 
-def auth():
-    creds = None
-    if os.path.exists("credentials.json"):
-        creds = Credentials.from_authorized_user_file("credentials.json", SCOPES)
-        print(creds)
+NAMES_TAB_NAME = "'All Divisions Players'"
+NAMES_RANGES = ["B4:C", "F4:G"]
 
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                "credentials.json", SCOPES
-            )
-            creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
 
-    try:
-        service = build("sheets", "v4", credentials=creds)
+@cache
+def get_credentials():
+    credential = ServiceAccountCredentials.from_json_keyfile_name(
+        SERVICE_ACCOUNT_KEY_FILE, SCOPE
+    )
 
-        # Call the Sheets API
-        sheet = service.spreadsheets()
+    if not credential or credential.invalid:
+        raise Exception("Unable to authenticate using service account key.")
+    return credential
+
+
+@cache
+def get_service(credentials):
+    return discovery.build("sheets", "v4", credentials=credentials)
+
+
+def fetch_member_names(service):
+    for names_range in NAMES_RANGES:
+        range_to_read = f"{NAMES_TAB_NAME}!{names_range}"
+        # first column is discord name, second is colonist
         result = (
-            sheet.values()
-            .get(spreadsheetId=SPREADSHEET_ID, range="A1:E10")
+            service.spreadsheets()
+            .values()
+            .get(spreadsheetId=SPREADSHEET_ID, range=range_to_read)
             .execute()
         )
         values = result.get("values", [])
-
-        if not values:
-            print("No data found.")
-            return
-
-        print("Name, Major:")
         for row in values:
-            # Print columns A and E, which correspond to indices 0 and 4.
-            print(f"{row[0]}, {row[4]}")
-    except HttpError as err:
-        print(err)
-        
+            yield row
+
+
+memoized_discord_to_colonist = {}
+
+
+def translate_name(name):
+    credentials = get_credentials()
+    service = get_service(credentials)
+
+    global memoized_discord_to_colonist
+    if name in memoized_discord_to_colonist:
+        return memoized_discord_to_colonist[name]
+
+    memoized_discord_to_colonist = {v: k for k, v in fetch_member_names(service)}
+
+    if name in memoized_discord_to_colonist:
+        return memoized_discord_to_colonist[name]
+
+
+
+def update(div: int, data: list[list[str]]):
+    credentials = get_credentials()
+    service = get_service(credentials)
+
+    sheet = service.spreadsheets()
+
+    STARTING_ROW = 3
+    div_col = "B" if div == 1 else "I"
+    range_to_read = f"{DATA_ENTRY_TAB_NAME}!{div_col}{STARTING_ROW}:{div_col}"
+    res = (
+        sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=range_to_read).execute()
+    )
+    vals = res.get("values", [])
+
+    first_empty_row = STARTING_ROW + len(vals)
+    last_col = chr((ord(div_col) - ord("A") + len(data[0])) % 26 + ord("A"))
+    range_to_write = f"{DATA_ENTRY_TAB_NAME}!{div_col}{first_empty_row}:{last_col}{first_empty_row + len(data)}"
+
+    rez = (
+        sheet.values()
+        .update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=range_to_write,
+            valueInputOption="RAW",
+            body={"values": data},
+        )
+        .execute()
+    )

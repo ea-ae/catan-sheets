@@ -1,2 +1,4 @@
 .env
 credentials.json
+token.json
+service_account_key.json
