@@ -56,7 +56,9 @@ def translate_name(creds, name):
         return discord_to_colonist[name]
 
 
-def update(creds, div: str, data: list[list[str]]):
+def update(
+    creds, div: str, data: list[list[str]], replay_link: str, has_warning: bool
+) -> bool:
     if len(data) != 4:
         raise Exception(f"sheet data invalid {data}")
 
@@ -67,20 +69,30 @@ def update(creds, div: str, data: list[list[str]]):
 
     sheet = service.spreadsheets()
 
-    first_div_col = DIV_COLS[div]
+    metadata_col = DIV_COLS[div]
     # first row is metadata, so when checking for empty rows, skip it
-    real_first_col = add_char(first_div_col, 1)
+    name_col = add_char(metadata_col, 1)
     range_to_read = (
-        f"{DATA_ENTRY_TAB_NAME}!{real_first_col}{STARTING_DATA_ENTRY_ROW}:{real_first_col}"
+        f"{DATA_ENTRY_TAB_NAME}!{metadata_col}{STARTING_DATA_ENTRY_ROW}:{name_col}"
     )
     res = (
         sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=range_to_read).execute()
     )
-    vals = res.get("values", [])
+    existing_rows = res.get("values", [])
 
-    first_empty_row = STARTING_DATA_ENTRY_ROW + len(vals)
-    last_col = add_char(first_div_col, len(data[0]))
-    range_to_write = f"{DATA_ENTRY_TAB_NAME}!{first_div_col}{first_empty_row}:{last_col}{first_empty_row + len(data)}"
+    is_duplicate = replay_link in [
+        metadata_row for metadata_row, _name_row in existing_rows
+    ]
+    if is_duplicate:
+        has_warning = True
+
+    # add metadata to indicate warnings
+    if has_warning:
+        data[3][0] = "⚠️"
+
+    first_empty_row = STARTING_DATA_ENTRY_ROW + len(existing_rows)
+    last_col = add_char(metadata_col, len(data[0]))
+    range_to_write = f"{DATA_ENTRY_TAB_NAME}!{metadata_col}{first_empty_row}:{last_col}{first_empty_row + len(data)}"
 
     (
         sheet.values()
@@ -92,6 +104,8 @@ def update(creds, div: str, data: list[list[str]]):
         )
         .execute()
     )
+
+    return is_duplicate
 
 
 def add_char(char: str, add: int):

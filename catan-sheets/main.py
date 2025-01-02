@@ -81,9 +81,6 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
         message = reaction.message
         print(message.content)
 
-        # gapi_creds = sheets.get_creds()
-        # members = message.guild.members
-
 
 message_id_circbuf = collections.deque(maxlen=100)
 
@@ -98,7 +95,7 @@ async def process_message(message: discord.Message):
 
     if message.author == bot.user:
         return
-    
+
     if message.id in message_id_circbuf:
         # we somehow received a duplicate message event! skip it
         return
@@ -140,13 +137,14 @@ just disregard this message.",
     )
     game_players = data["eventHistory"]["endGameState"]["players"]
 
+    is_old_game = played_at < datetime.now(tz=pytz.UTC) - timedelta(hours=4)
+    if is_old_game:
+        msg.append("*⚠️ Warning: this game was played more than 4 hours ago.*")
+
     members = message.guild.members  # type: ignore
     gapi_creds = sheets.get_creds()
 
-    if played_at < datetime.now(tz=pytz.UTC) - timedelta(hours=4):
-        msg.append('*⚠️ Warning: this game was played more than 4 hours ago.*')
-
-    msg.append("")
+    msg.append("")  # empty row after title/warnings
 
     for player in game_players.values():
         name = colors_to_names[player["color"]]
@@ -178,12 +176,17 @@ just disregard this message.",
         sheet_data.append(
             ["", discord_name if discord_name else fallback_name + " (FALLBACK)", vp]
         )
-    
+
     # add metadata
-    sheet_data[0][0] = f"https://colonist.io/replay/{slug_matches[0]}"
+    replay_link = f"https://colonist.io/replay/{slug_matches[0]}"
+    sheet_data[0][0] = replay_link
     sheet_data[1][0] = played_at.isoformat()
 
-    sheets.update(gapi_creds, div, sheet_data)
+    is_duplicate_replay = sheets.update(
+        gapi_creds, div, sheet_data, replay_link, has_warning=is_old_game
+    )
+    if is_duplicate_replay:
+        msg.insert(1, "*⚠️ Warning: this replay has already been submitted.*")
 
     await message.add_reaction("🤖")
     await message.channel.send("\n".join(msg), reference=message)
