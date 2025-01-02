@@ -53,7 +53,7 @@ async def process_message(message: discord.Message):
 
     if "gameId=" in message.content:
         await message.channel.send(
-            "Please post a replay link in the `/replay/abcdefg` format instead of `/replay?gameId=12345`.\
+            "Please post a replay link in the /replay/abcdefg format instead of /replay?gameId=12345.\
             \nTo do this, press the share button in the replay view (located in the top-right, above the 'Open Stats' button on PC)."
         )
         return
