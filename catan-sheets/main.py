@@ -27,8 +27,10 @@ HEADERS = {
 }
 
 
-DIV1_CHANNEL = 827273190014320652
-DIV2_CHANNEL = 827274292244512780
+DIV1_CHANNEL = 1324153205575389207
+DIV2_CHANNEL = 1324207273785954364
+# DIV1_CHANNEL = 827273190014320652
+# DIV2_CHANNEL = 827274292244512780
 ERR_CHANNEL = 1324202972997091480
 COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\]+)"
 
@@ -121,6 +123,7 @@ async def process_message(message: discord.Message):
     if len(sheet_data) == 4:
         sheets.update(gapi_creds, div, sheet_data)
 
+    await message.add_reaction("🤖")
     await message.channel.send("\n".join(msg))
 
 

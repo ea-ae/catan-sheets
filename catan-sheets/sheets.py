@@ -5,7 +5,6 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient import discovery
-from functools import cache
 
 
 SCOPE = "https://www.googleapis.com/auth/spreadsheets"
