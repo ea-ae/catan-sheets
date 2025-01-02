@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "catan"
+name = "catan-sheets"
 package-mode = false
 version = "0.1.0"
 description = ""
