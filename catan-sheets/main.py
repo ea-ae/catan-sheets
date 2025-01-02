@@ -26,11 +26,11 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
 }
 
-DIV1_CHANNEL = [827273190014320652, 1324153205575389207]
-DIV2_CHANNEL = [827274292244512780, 1324207273785954364]
-CK_CHANNEL = [879366959202983936]
+DIV1_CHANNELS = [827273190014320652, 1324153205575389207]
+DIV2_CHANNELS = [827274292244512780, 1324207273785954364]
+CK_CHANNELS = [879366959202983936]
 ERR_CHANNEL = 1324202972997091480
-COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\()[\]]+)"
+COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\()[\]\n]+)"
 
 
 @bot.event
@@ -42,8 +42,9 @@ async def on_message(message: discord.Message):
         print(err)
         await bot.get_channel(ERR_CHANNEL).send(f"Error: {err}")  # type: ignore
 
+
 @bot.event
-async def on_message_edit(before: discord.Message, after: discord.Message):
+async def on_message_edit(_: discord.Message, after: discord.Message):
     try:
         # if bot already reacted to message, then it's valid; ignore
         for reaction in after.reactions:
@@ -58,18 +59,18 @@ async def on_message_edit(before: discord.Message, after: discord.Message):
         await bot.get_channel(ERR_CHANNEL).send(f"Error: {err}")  # type: ignore
 
 
-# @bot.event
-# async def on_message_delete(message: discord.Message):
-#     async for msg in message.channel.history(limit=10):
-#         if msg.reference is not None and msg.reference.message_id == message.id:
-#             await msg.delete()
-#             break
+@bot.event
+async def on_message_delete(message: discord.Message):
+    async for msg in message.channel.history(limit=15):
+        if msg.reference is not None and msg.reference.message_id == message.id:
+            await msg.add_reaction("🗑️")
+            break
 
 
 async def process_message(message: discord.Message):
-    if message.channel.id in DIV1_CHANNEL:
+    if message.channel.id in DIV1_CHANNELS:
         div = "1"
-    elif message.channel.id in DIV2_CHANNEL:
+    elif message.channel.id in DIV2_CHANNELS:
         div = "2"
     else:
         return
@@ -85,7 +86,7 @@ async def process_message(message: discord.Message):
         await message.channel.send(
             "Please post a replay link in the /replay/abcdefg format instead of /replay?gameId=12345.\
             \nTo do this, press the share button in the replay view (located in the top-right, above the 'Open Stats' button on PC).",
-            reference=message
+            reference=message,
         )
         return
 
@@ -112,7 +113,7 @@ async def process_message(message: discord.Message):
     game_players = data["eventHistory"]["endGameState"]["players"]
 
     members = message.guild.members  # type: ignore
-    gapi_creds = sheets.get_credentials()
+    gapi_creds = sheets.get_creds()
 
     for player in game_players.values():
         name = colors_to_names[player["color"]]
