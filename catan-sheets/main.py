@@ -31,7 +31,6 @@ DIV1_CHANNEL = 1324153205575389207
 DIV2_CHANNEL = 1324207273785954364
 ERR_CHANNEL = 1324202972997091480
 COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\]+)"
-COLONIST_GAME_ID_REGEX = r"colonist\.io\/replay\?gameId=(\d+)"
 
 
 @bot.event
@@ -52,15 +51,17 @@ async def process_message(message: discord.Message):
     if message.author == bot.user:
         return
 
-    slug_matches = re.findall(COLONIST_REPLAY_REGEX, message.content, re.DOTALL)
-    game_id_matches = re.findall(COLONIST_GAME_ID_REGEX, message.content, re.DOTALL)
-    if len(slug_matches) == 1:
-        data = query_colonist(slug_matches[0], True)
-    # colonist.io is dumb and requires a valid playerControl for the old API path
-    elif len(game_id_matches) == 1:
-        data = query_colonist(game_id_matches[0], False)
-    else:
+    if "gameId=" in message.content:
+        await message.channel.send(
+            "Please post a replay link in the `/replay/abcdefg` format instead of `/replay?gameId=12345`.\
+            \nTo do this, press the share button in the replay view (located in the top-right, above the 'Open Stats' button on PC)."
+        )
         return
+
+    slug_matches = re.findall(COLONIST_REPLAY_REGEX, message.content, re.DOTALL)
+    if len(slug_matches) == 0:
+        return
+    data = query_colonist(slug_matches[0])
 
     played_at = datetime.fromisoformat(
         data["eventHistory"]["startTime"].replace("Z", "+00:00")
@@ -118,38 +119,15 @@ async def process_message(message: discord.Message):
     await message.channel.send("\n".join(msg))
 
 
-def query_colonist(game: str, is_slug: bool):
-    if is_slug:
-        api_url = f"https://colonist.io/api/replay/data-from-slug?replayUrlSlug={game}"
-        res = requests.get(api_url, headers=HEADERS)
-        if res.status_code != 200:
-            raise Exception(
-                f"colonist.io api call failed with {res.status_code}, {res.json()}"
-            )
+def query_colonist(game: str):
+    api_url = f"https://colonist.io/api/replay/data-from-slug?replayUrlSlug={game}"
+    res = requests.get(api_url, headers=HEADERS)
+    if res.status_code != 200:
+        raise Exception(
+            f"colonist.io api call failed with {res.status_code}, {res.json()}"
+        )
 
-        return res.json()["data"]
-    # colonist.io is dumb and requires a valid playerControl for the old API path
-    else:
-        api_url = f"https://colonist.io/api/replay/data-from-game-id?gameId={game}"
-        player_color = 1
-        while True:
-            api_url_with_color = f"{api_url}&playerColor={player_color}"
-            print(api_url_with_color)
-            res = requests.get(api_url_with_color, headers=HEADERS)
-            if res.status_code == 200:
-                print("ok with color", player_color)
-                return res.json()["data"]
-            else:
-                print("failed with color", player_color)
-                if res.status_code == 400:
-                    error = res.json()
-                    if "invalidPlayerColor" in error and player_color < 15:
-                        player_color += 1
-                        continue
-
-                raise Exception(
-                    f"colonist.io api call failed with {res.status_code}, {res.json()}"
-                )
+    return res.json()["data"]
 
 
 def main():
