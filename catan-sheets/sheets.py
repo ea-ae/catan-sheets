@@ -13,7 +13,6 @@ SERVICE_ACCOUNT_KEY_FILE = "service_account_key.json"
 SPREADSHEET_ID = "1U7uKsuO2l1SxT3qZSRmdRdX1apjm81pRsnYtFcxMGQQ"
 
 DATA_ENTRY_TAB_NAME = "Internal"
-
 NAMES_TAB_NAME = "'All Divisions Players'"
 NAMES_RANGES = ["B4:C", "F4:G"]
 
