@@ -1,11 +1,7 @@
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-import discord
+from shared import GameData
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient import discovery
 from functools import lru_cache
-from typing import NamedTuple
-import pytz
 
 
 SCOPE = "https://www.googleapis.com/auth/spreadsheets"
@@ -17,79 +13,6 @@ DATA_ENTRY_TAB_NAME = "Internal"
 NAMES_TAB_NAME = "'All Divisions Players'"
 NAMES_RANGES = ["B4:C", "F4:G"]
 DIV_COLS = {"1": "A", "2": "H"}
-
-
-@dataclass
-class GameMetadata:
-    division: str
-    replay_link: str
-    timestamp: datetime
-    is_duplicate: bool
-
-    @property
-    def is_old_game(self):
-        return self.timestamp < datetime.now(tz=pytz.UTC) - timedelta(hours=4)
-
-    @property
-    def has_warning(self):
-        return self.is_old_game or self.is_duplicate
-
-    def serialize(self) -> tuple[str, str, str, str]:
-        return (
-            self.replay_link,
-            self.timestamp.isoformat(),
-            "",
-            "⚠️" if self.has_warning else "",
-        )
-
-
-class PlayerScore(NamedTuple):
-    display_name: str
-    scoreboard_name: str
-    score: int
-
-
-@dataclass
-class GameData:
-    metadata: GameMetadata | None
-    scores: list[PlayerScore]
-
-    def serialize(self):
-        if self.metadata is None:
-            raise Exception(f"metadata is mandatory for serialization")
-
-        if len(self.scores) != 4:
-            raise Exception(f"score data invalid {self.scores}")
-
-        # zip one metadata element per scores row to the start
-        return [
-            [md_row] + [score.scoreboard_name, score.score]
-            for md_row, score in zip(self.metadata.serialize(), self.scores)
-        ]
-
-    def message(self, author: discord.User | discord.Member) -> str:
-        if self.metadata is None:
-            raise Exception(f"metadata is mandatory for message generation")
-
-        msg = []
-
-        played_at_epoch = int(self.metadata.timestamp.timestamp())
-        msg.append(
-            f"**Division {self.metadata.division} colonist.io game** posted by {author.mention} (played <t:{played_at_epoch}>)"
-        )
-
-        if self.metadata.is_old_game:
-            msg.append("*⚠️ Warning: this game was played more than 4 hours ago.*")
-
-        if self.metadata.is_duplicate:
-            msg.append("*⚠️ Warning: this game has already been submitted.*")
-        
-        msg.append("")
-
-        for player in self.scores:
-            msg.append(f"{player.display_name}: {player.score} VPs")
-
-        return "\n".join(msg)
 
 
 def get_creds():
@@ -153,7 +76,7 @@ def update(creds, div: str, game_data: GameData):
     )
     existing_rows = res.get("values", [])
 
-    if len(existing_rows) > 0:
+    if len(existing_rows) > 0 and len(existing_rows[0]) > 0:
         is_duplicate = game_data.metadata.replay_link in [row[0] for row in existing_rows]
         game_data.metadata.is_duplicate = is_duplicate
 
