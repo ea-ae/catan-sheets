@@ -53,7 +53,7 @@ def fetch_member_names(credentials):
 
 
 def translate_name(credentials, name):
-    discord_to_colonist = {v: k for k, v in fetch_member_names(credentials)}
+    discord_to_colonist = fetch_member_names(credentials)
 
     if name in discord_to_colonist:
         return discord_to_colonist[name]

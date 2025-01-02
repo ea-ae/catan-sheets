@@ -30,7 +30,7 @@ DIV1_CHANNEL = [827273190014320652, 1324153205575389207]
 DIV2_CHANNEL = [827274292244512780, 1324207273785954364]
 CK_CHANNEL = [879366959202983936]
 ERR_CHANNEL = 1324202972997091480
-COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\]+)"
+COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\()[\]]+)"
 
 
 @bot.event
@@ -39,8 +39,31 @@ async def on_message(message: discord.Message):
         await process_message(message)
     except Exception:
         err = traceback.format_exc()
-        print("error", err)
+        print(err)
         await bot.get_channel(ERR_CHANNEL).send(f"Error: {err}")  # type: ignore
+
+@bot.event
+async def on_message_edit(before: discord.Message, after: discord.Message):
+    try:
+        # if bot already reacted to message, then it's valid; ignore
+        for reaction in after.reactions:
+            async for user in reaction.users():
+                if bot.user is None or user == bot.user.id:
+                    return
+
+        await process_message(after)
+    except Exception:
+        err = traceback.format_exc()
+        print(err)
+        await bot.get_channel(ERR_CHANNEL).send(f"Error: {err}")  # type: ignore
+
+
+# @bot.event
+# async def on_message_delete(message: discord.Message):
+#     async for msg in message.channel.history(limit=10):
+#         if msg.reference is not None and msg.reference.message_id == message.id:
+#             await msg.delete()
+#             break
 
 
 async def process_message(message: discord.Message):
@@ -55,13 +78,14 @@ async def process_message(message: discord.Message):
         return
 
     if message.content == "ping":
-        await message.channel.send("pong")  # type: ignore
+        await message.channel.send("pong", reference=message)  # type: ignore
         return
 
     if "gameId=" in message.content:
         await message.channel.send(
             "Please post a replay link in the /replay/abcdefg format instead of /replay?gameId=12345.\
-            \nTo do this, press the share button in the replay view (located in the top-right, above the 'Open Stats' button on PC)."
+            \nTo do this, press the share button in the replay view (located in the top-right, above the 'Open Stats' button on PC).",
+            reference=message
         )
         return
 
@@ -125,7 +149,7 @@ async def process_message(message: discord.Message):
         sheets.update(gapi_creds, div, sheet_data)
 
     await message.add_reaction("🤖")
-    await message.channel.send("\n".join(msg))
+    await message.channel.send("\n".join(msg), reference=message)
 
 
 def query_colonist(game: str):
@@ -133,7 +157,7 @@ def query_colonist(game: str):
     res = requests.get(api_url, headers=HEADERS)
     if res.status_code != 200:
         raise Exception(
-            f"colonist.io api call failed with {res.status_code}, {res.json()}"
+            f"colonist.io api call to {api_url} failed with {res.status_code}, {res.json()}"
         )
 
     return res.json()["data"]
