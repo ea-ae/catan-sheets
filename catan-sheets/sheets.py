@@ -5,6 +5,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient import discovery
+from functools import lru_cache
 
 
 SCOPE = "https://www.googleapis.com/auth/spreadsheets"
@@ -30,7 +31,11 @@ def get_service(credentials):
     return discovery.build("sheets", "v4", credentials=credentials)
 
 
-def fetch_member_names(service):
+@lru_cache(maxsize=1)
+def fetch_member_names(credentials):
+    service = get_service(credentials)
+    member_names = {}
+
     for names_range in NAMES_RANGES:
         range_to_read = f"{NAMES_TAB_NAME}!{names_range}"
         # first column is discord name, second is colonist
@@ -42,34 +47,29 @@ def fetch_member_names(service):
         )
         values = result.get("values", [])
         for row in values:
-            yield row
-
-
-memoized_discord_to_colonist = {}
+            member_names[row[1]] = row[0]
+    
+    return member_names
 
 
 def translate_name(credentials, name):
-    credentials = get_credentials()
-    service = get_service(credentials)
+    discord_to_colonist = {v: k for k, v in fetch_member_names(credentials)}
 
-    global memoized_discord_to_colonist
-    if name in memoized_discord_to_colonist:
-        return memoized_discord_to_colonist[name]
-
-    memoized_discord_to_colonist = {v: k for k, v in fetch_member_names(service)}
-
-    if name in memoized_discord_to_colonist:
-        return memoized_discord_to_colonist[name]
+    if name in discord_to_colonist:
+        return discord_to_colonist[name]
 
 
 
-def update(credentials, div: int, data: list[list[str]]):
+def update(credentials, div: str, data: list[list[str]]):
     service = get_service(credentials)
 
     sheet = service.spreadsheets()
 
     STARTING_ROW = 3
-    div_col = "B" if div == 1 else "I"
+    div_col = {
+        "1": "B",
+        "2": "I"
+    }[div]
     range_to_read = f"{DATA_ENTRY_TAB_NAME}!{div_col}{STARTING_ROW}:{div_col}"
     res = (
         sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=range_to_read).execute()

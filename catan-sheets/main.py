@@ -26,11 +26,9 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
 }
 
-
-# DIV1_CHANNEL = 1324153205575389207
-# DIV2_CHANNEL = 1324207273785954364
-DIV1_CHANNEL = 827273190014320652
-DIV2_CHANNEL = 827274292244512780
+DIV1_CHANNEL = [827273190014320652, 1324153205575389207]
+DIV2_CHANNEL = [827274292244512780, 1324207273785954364]
+CK_CHANNEL = [879366959202983936]
 ERR_CHANNEL = 1324202972997091480
 COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\]+)"
 
@@ -46,9 +44,12 @@ async def on_message(message: discord.Message):
 
 
 async def process_message(message: discord.Message):
-    if message.channel.id not in [DIV1_CHANNEL, DIV2_CHANNEL]:
+    if message.channel.id in DIV1_CHANNEL:
+        div = "1"
+    elif message.channel.id in DIV2_CHANNEL:
+        div = "2"
+    else:
         return
-    div = {DIV1_CHANNEL: 1, DIV2_CHANNEL: 2}[message.channel.id]
 
     if message.author == bot.user:
         return
