@@ -7,8 +7,7 @@ import os
 import re
 import requests
 import traceback
-from datetime import datetime, timedelta
-import pytz
+from datetime import datetime
 import collections
 
 
@@ -123,28 +122,18 @@ just disregard this message.",
     played_at = datetime.fromisoformat(
         data["eventHistory"]["startTime"].replace("Z", "+00:00")
     )
-    played_at_epoch = int(played_at.timestamp())
 
     colors_to_names: dict[int, str] = {
         player["selectedColor"]: player["username"]
         for player in data["playerUserStates"]
     }
 
-    msg = []
-    sheet_data = []
-    msg.append(
-        f"**Division {div} colonist.io game** posted by {message.author.mention} (played <t:{played_at_epoch}>)"
-    )
     game_players = data["eventHistory"]["endGameState"]["players"]
-
-    is_old_game = played_at < datetime.now(tz=pytz.UTC) - timedelta(hours=4)
-    if is_old_game:
-        msg.append("*⚠️ Warning: this game was played more than 4 hours ago.*")
 
     members = message.guild.members  # type: ignore
     gapi_creds = sheets.get_creds()
 
-    msg.append("")  # empty row after title/warnings
+    game_data = sheets.GameData(metadata=None, scores=[])
 
     for player in game_players.values():
         name = colors_to_names[player["color"]]
@@ -166,30 +155,33 @@ just disregard this message.",
         largest_army = vp_data.get("3", 0)
         longest_road = vp_data.get("4", 0)
 
-        vp = sum((settles, cities * 2, vp_devs, largest_army * 2, longest_road * 2))
+        score = sum((settles, cities * 2, vp_devs, largest_army * 2, longest_road * 2))
 
-        # coalesce all 3
-        fallback_name = discord_name if discord_name is not None else name
-        msg.append(
-            f"{name} ({discord_user.mention if discord_user else '@' + fallback_name}): {vp} VPs"
-        )
-        sheet_data.append(
-            ["", discord_name if discord_name else fallback_name + " (FALLBACK)", vp]
+        fallback_name = discord_name if discord_name else name
+        display_name = f"{name} ({discord_user.mention if discord_user else '@' + fallback_name})"
+        scoreboard_name = (
+            discord_name if discord_name else fallback_name + " (FALLBACK)"
         )
 
-    # add metadata
-    replay_link = f"https://colonist.io/replay/{slug_matches[0]}"
-    sheet_data[0][0] = replay_link
-    sheet_data[1][0] = played_at.isoformat()
+        game_data.scores.append(
+            sheets.PlayerScore(
+                display_name=display_name, scoreboard_name=scoreboard_name, score=score
+            )
+        )
 
-    is_duplicate_replay = sheets.update(
-        gapi_creds, div, sheet_data, replay_link, has_warning=is_old_game
+    game_data.metadata = sheets.GameMetadata(
+        division=div,
+        replay_link=f"https://colonist.io/replay/{slug_matches[0]}",
+        timestamp=played_at,
+        is_duplicate=False,
     )
-    if is_duplicate_replay:
-        msg.insert(1, "*⚠️ Warning: this replay has already been submitted.*")
+
+    sheets.update(gapi_creds, div, game_data)
 
     await message.add_reaction("🤖")
-    await message.channel.send("\n".join(msg), reference=message)
+    await message.channel.send(
+        game_data.message(author=message.author), reference=message
+    )
 
 
 def query_colonist(game: str):
