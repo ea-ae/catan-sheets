@@ -5,4 +5,5 @@
 3. Add the generated `service_account_key.json` file for the google APIs
 4. Install poetry, e.g. `pipx install poetry`
 5. Install dependencies via `poetry install`
-6. Run bot via `poetry run python catan-sheets/main.py`
+6. Set the correct constants (e.g. channel IDs)
+7. Run bot via `poetry run python catan-sheets/main.py`
