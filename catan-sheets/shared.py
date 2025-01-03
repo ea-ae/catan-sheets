@@ -84,7 +84,7 @@ class GameData:
 
         # zip one metadata element per scores row to the start
         return [
-            [md_row] + [score.scoreboard_name, score.score]
+            [md_row] + [score.scoreboard_name, min(score.score, 13) if self.metadata.division == Division.CK else min(score.score, 10)]
             for md_row, score in zip(self.metadata.serialize(), self.scores)
         ]
 
