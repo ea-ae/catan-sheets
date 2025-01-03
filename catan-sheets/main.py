@@ -103,11 +103,11 @@ async def process_message(message: discord.Message):
         embed = discord.Embed()
         embed.set_image(url="https://i.imgur.com/qLWL6N8.png")
         await message.channel.send(
-            "Please post a replay link by going to 'Return to Map' on the top right from the end game screen.\
-            \nTo acquire the link, press the share button in the replay view.\
-            \n\nPS: In case the lobby for this game was created manually by a non-premium user, the bot can't view it. In that case, just disregard this message.",
+            "Please post a replay link (in a new message) by going to 'Return to Map' on the top right from the end game screen. To acquire the link, press the share button in the replay view.\
+            \nPS: In case the lobby for this game was created manually by a non-premium user, the bot can't view it. In that case, just disregard this message.",
             reference=message,
             embed=embed,
+            delete_after=180.0
         )
         return
 
@@ -118,9 +118,9 @@ async def process_message(message: discord.Message):
         # detect if message contains an image embed
         if len(message.attachments) > 0:
             if message.author.id in naughty_list:
-                await message.channel.send("Include a replay link with your results (in a new message).")
+                await message.channel.send("Include a replay link with your results (in a new message).", reference=message, delete_after=180.0)
             else:
-                await message.channel.send("Please include a replay link with your results (in a new message).", reference=message)
+                await message.channel.send("Please include a replay link with your results (in a new message).", reference=message, delete_after=180.0)
                 naughty_list.append(message.author.id)
 
         return  # doesn't contain any colonist/twosheep replay links
