@@ -1,4 +1,4 @@
-from shared import GameData
+from shared import GameData, Division
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient import discovery
 from functools import lru_cache
@@ -6,13 +6,17 @@ from functools import lru_cache
 
 SCOPE = "https://www.googleapis.com/auth/spreadsheets"
 SERVICE_ACCOUNT_KEY_FILE = "service_account_key.json"
-SPREADSHEET_ID = "1U7uKsuO2l1SxT3qZSRmdRdX1apjm81pRsnYtFcxMGQQ"
+
+BASE_SPREADSHEET_ID = "1U7uKsuO2l1SxT3qZSRmdRdX1apjm81pRsnYtFcxMGQQ"
+CK_SPREADSHEET_ID = "1gPnHor5-JuyZmDrb-0MbPBMqwzjaFEy-BDXOFW1Eiyo"
+
+DIV_COLS = {Division.DIV1: "A", Division.DIV2: "H", Division.CK: "A"}
 
 STARTING_DATA_ENTRY_ROW = 4
 DATA_ENTRY_TAB_NAME = "Internal"
 NAMES_TAB_NAME = "'All Divisions Players'"
-NAMES_RANGES = ["B4:C", "F4:G"]
-DIV_COLS = {"1": "A", "2": "H"}
+BASE_NAMES_RANGES = ["B4:C", "F4:G"]
+CK_NAMES_RANGES = ["C4:D"]
 
 
 def get_creds():
@@ -30,17 +34,19 @@ def get_service(creds):
 
 
 @lru_cache(maxsize=1)
-def fetch_member_names(creds):
+def fetch_member_names(creds, div: Division):
     service = get_service(creds)
     member_names = {}
 
-    for names_range in NAMES_RANGES:
+    name_ranges = CK_NAMES_RANGES if div == Division.CK else BASE_NAMES_RANGES
+
+    for names_range in name_ranges:
         range_to_read = f"{NAMES_TAB_NAME}!{names_range}"
         # first column is discord name, second is colonist
         result = (
             service.spreadsheets()
             .values()
-            .get(spreadsheetId=SPREADSHEET_ID, range=range_to_read)
+            .get(spreadsheetId=BASE_SPREADSHEET_ID, range=range_to_read)
             .execute()
         )
         values = result.get("values", [])
@@ -50,14 +56,14 @@ def fetch_member_names(creds):
     return member_names
 
 
-def translate_name(creds, name):
-    discord_to_colonist = fetch_member_names(creds)
+def translate_name(creds, div: Division, name: str):
+    discord_to_colonist = fetch_member_names(creds, div)
 
     if name in discord_to_colonist:
         return discord_to_colonist[name]
 
 
-def update(creds, div: str, game_data: GameData):
+def update(creds, div: Division, game_data: GameData):
     if game_data.metadata is None:
         raise Exception("cannot update without metadata")
 
@@ -71,13 +77,16 @@ def update(creds, div: str, game_data: GameData):
     range_to_read = (
         f"{DATA_ENTRY_TAB_NAME}!{metadata_col}{STARTING_DATA_ENTRY_ROW}:{name_col}"
     )
+    spreadsheet_id = CK_SPREADSHEET_ID if div == Division.CK else BASE_SPREADSHEET_ID
     res = (
-        sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=range_to_read).execute()
+        sheet.values().get(spreadsheetId=spreadsheet_id, range=range_to_read).execute()
     )
     existing_rows = res.get("values", [])
 
     if len(existing_rows) > 0 and len(existing_rows[0]) > 0:
-        is_duplicate = game_data.metadata.replay_link in [row[0] for row in existing_rows]
+        is_duplicate = game_data.metadata.replay_link in [
+            row[0] for row in existing_rows
+        ]
         game_data.metadata.is_duplicate = is_duplicate
 
     first_empty_row = STARTING_DATA_ENTRY_ROW + len(existing_rows)
@@ -90,7 +99,7 @@ def update(creds, div: str, game_data: GameData):
     (
         sheet.values()
         .update(
-            spreadsheetId=SPREADSHEET_ID,
+            spreadsheetId=BASE_SPREADSHEET_ID,
             range=range_to_write,
             valueInputOption="RAW",
             body={"values": game_data.serialize()},

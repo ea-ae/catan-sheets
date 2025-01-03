@@ -1,13 +1,21 @@
 import discord
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from enum import Enum
 from typing import NamedTuple, Sequence
 import pytz
 
 
+# enum
+class Division(Enum):
+    DIV1 = "1"
+    DIV2 = "2"
+    CK = "CK"
+
+
 @dataclass
 class GameMetadata:
-    division: str
+    division: Division
     replay_link: str
     timestamp: datetime
     is_duplicate: bool
@@ -25,7 +33,7 @@ class GameMetadata:
             self.replay_link,
             self.timestamp.isoformat(),
             "",
-            "⚠️" if self.has_warning else "",
+            f"{'⚠️' if self.is_duplicate else ""}{'🕒' if self.is_old_game else ''}",
         )
 
 
@@ -80,7 +88,7 @@ class GameData:
 
         played_at_epoch = int(self.metadata.timestamp.timestamp())
         msg.append(
-            f"**Division {self.metadata.division}** [game]({self.metadata.replay_link}) posted by {author.mention} (played <t:{played_at_epoch}>)"
+            f"**Division {self.metadata.division.value}** [game]({self.metadata.replay_link}) posted by {author.mention} (played <t:{played_at_epoch}>)"
         )
 
         if self.metadata.is_old_game:

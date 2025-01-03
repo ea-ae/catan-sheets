@@ -1,6 +1,6 @@
 from datetime import datetime
 from dotenv import load_dotenv
-from shared import GameData, GameMetadata, PlayerScore, get_discord_user
+from shared import Division, GameData, GameMetadata, PlayerScore, get_discord_user
 import sheets
 
 from functools import cache
@@ -16,7 +16,10 @@ TWOSHEEP_REPLAY_REGEX = r"twosheep\.io\/replay\/([^? &\/\\()[\]\n]+)"
 HEADERS = {"Content-Type": "application/json"}
 
 
-def twosheep(message: discord.Message, div: str):
+def twosheep(message: discord.Message, div: Division):
+    if div == "CK":
+        return None
+
     slug_matches = re.findall(TWOSHEEP_REPLAY_REGEX, message.content, re.DOTALL)
     if len(slug_matches) == 0:
         return None
@@ -34,7 +37,7 @@ def twosheep(message: discord.Message, div: str):
         name = player["n"]
         score = player["v"]
 
-        discord_name = sheets.translate_name(gapi_creds, name)
+        discord_name = sheets.translate_name(gapi_creds, div, name)
         discord_user = get_discord_user(members, discord_name) if discord_name else None
 
         game_data.scores.append(PlayerScore.from_names(discord_user, discord_name, name, score))

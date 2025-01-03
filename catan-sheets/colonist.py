@@ -1,4 +1,4 @@
-from shared import GameData, GameMetadata, PlayerScore, get_discord_user
+from shared import Division, GameData, GameMetadata, PlayerScore, get_discord_user
 import sheets
 
 from datetime import datetime
@@ -15,7 +15,7 @@ HEADERS = {
 }
 
 
-def colonist(message: discord.Message, div: str) -> GameData | None:
+def colonist(message: discord.Message, div: Division) -> GameData | None:
     slug_matches = re.findall(COLONIST_REPLAY_REGEX, message.content, re.DOTALL)
     if len(slug_matches) == 0:
         return None
@@ -40,7 +40,7 @@ def colonist(message: discord.Message, div: str) -> GameData | None:
     for player in game_players.values():
         name = colors_to_names[player["color"]]
 
-        discord_name = sheets.translate_name(gapi_creds, name)
+        discord_name = sheets.translate_name(gapi_creds, div, name)
         discord_user = get_discord_user(members, discord_name) if discord_name else None
 
         vp_data = player["victoryPoints"]
@@ -49,9 +49,28 @@ def colonist(message: discord.Message, div: str) -> GameData | None:
         vp_devs = vp_data.get("2", 0)
         largest_army = vp_data.get("3", 0)
         longest_road = vp_data.get("4", 0)
-        score = sum((settles, cities * 2, vp_devs, largest_army * 2, longest_road * 2))
+        ck_metropolis = vp_data.get("6", 0)
+        ck_catan_points = vp_data.get("7", 0)
+        ck_vps = vp_data.get("8", 0)
+        ck_merchant = vp_data.get("9", 0)
 
-        game_data.scores.append(PlayerScore.from_names(discord_user, discord_name, name, score))
+        score = sum(
+            (
+                settles,
+                cities * 2,
+                vp_devs,
+                largest_army * 2,
+                longest_road * 2,
+                ck_metropolis * 2,
+                ck_catan_points,
+                ck_vps,
+                ck_merchant,
+            )
+        )
+
+        game_data.scores.append(
+            PlayerScore.from_names(discord_user, discord_name, name, score)
+        )
 
     game_data.metadata = GameMetadata(
         division=div,

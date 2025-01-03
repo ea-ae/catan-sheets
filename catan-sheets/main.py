@@ -1,4 +1,5 @@
 import sheets
+from shared import Division
 from colonist import colonist
 from twosheep import twosheep, get_twosheep_api_key
 
@@ -21,16 +22,12 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 
-@bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user}")
-
-
 # DIV1_CHANNELS = [827273190014320652, 1324153205575389207]
 # DIV2_CHANNELS = [827274292244512780, 1324207273785954364]
+# CK_CHANNELS = [879366959202983936, 1324500081189060729]
 DIV1_CHANNELS = [1324153205575389207]
 DIV2_CHANNELS = [1324207273785954364]
-CK_CHANNELS = [879366959202983936]
+CK_CHANNELS = [1324500081189060729]
 ERR_CHANNEL = 1324202972997091480
 
 
@@ -48,6 +45,11 @@ message_id_to_replay_owner: dict[int, str] = {}
 #             return
 
 #         await interaction.response.send_message("The replay can only be deleted by the submitter.", ephemeral=True)
+
+
+@bot.event
+async def on_ready():
+    print(f"Logged in as {bot.user}")
 
 
 @bot.event
@@ -84,24 +86,21 @@ async def on_message(message: discord.Message):
 #         print(reaction.message.content)
 
 
-message_id_circbuf = collections.deque(maxlen=100)  # to prevent duplicate events
+naughty_list = collections.deque(maxlen=10)
 
 
-async def process_message(message: discord.Message, is_edit=False):
+async def process_message(message: discord.Message):
     if message.channel.id in DIV1_CHANNELS:
-        div = "1"
+        div = Division.DIV1
     elif message.channel.id in DIV2_CHANNELS:
-        div = "2"
+        div = Division.DIV2
+    elif message.channel.id in CK_CHANNELS:
+        div = Division.CK
     else:
         return
 
     if message.author.bot:
         return
-
-    if message.id in message_id_circbuf and not is_edit:
-        # we somehow received a duplicate message event! skip it
-        return
-    message_id_circbuf.append(message.id)
 
     if message.content == "ping":
         await message.channel.send("pong", reference=message)  # type: ignore
@@ -115,20 +114,24 @@ async def process_message(message: discord.Message, is_edit=False):
             \nTo acquire the link, press the share button in the replay view.\
             \n\nPS: In case the lobby for this game was created manually by a non-premium user, the bot can't view it. In that case, just disregard this message.",
             reference=message,
-            embed=embed
+            embed=embed,
         )
         return
 
     game_data = colonist(message, div)
-    if game_data is None:
+    if game_data is None and div != Division.CK:
         game_data = twosheep(message, div)
     if game_data is None:
+        # detect if message contains an image embed
+        if len(message.attachments) > 0:
+            if message.author.id in naughty_list:
+                await message.channel.send("fuck you")
+            else:
+                await message.channel.send("Please include a replay link with your results (in a new message).", reference=message)
+                naughty_list.append(message.author.id)
+
         return  # doesn't contain any colonist/twosheep replay links
 
-    # if we already have this reaction, skip
-    # for reaction in message.reactions:
-    #     if reaction.emoji == "🤖":
-    #         return
     await message.add_reaction("🤖")
 
     handled_replay_messages.add(message.id)
