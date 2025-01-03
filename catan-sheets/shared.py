@@ -58,7 +58,7 @@ class PlayerScore(NamedTuple):
     ):
         fallback_name = discord_name if discord_name else name
         display_name = (
-            f"{name} ({discord_user.mention if discord_user else '@' + fallback_name})"
+            f"{name} ({'@' + fallback_name})"
         )
         scoreboard_name = (
             discord_name if discord_name else fallback_name + " (FALLBACK)"
