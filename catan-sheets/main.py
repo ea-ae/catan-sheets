@@ -118,7 +118,7 @@ async def process_message(message: discord.Message):
         # detect if message contains an image embed
         if len(message.attachments) > 0:
             if message.author.id in naughty_list:
-                await message.channel.send("Please include a replay link with your results (in a new message) or I'll hurt you")
+                await message.channel.send("Include a replay link with your results (in a new message).")
             else:
                 await message.channel.send("Please include a replay link with your results (in a new message).", reference=message)
                 naughty_list.append(message.author.id)
