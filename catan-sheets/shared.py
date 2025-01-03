@@ -1,21 +1,28 @@
+from trivia import generate_trivia
+
 import discord
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import NamedTuple, Sequence
+from typing import Any, NamedTuple, Sequence
 import pytz
 
 
-# enum
 class Division(Enum):
     DIV1 = "1"
     DIV2 = "2"
     CK = "CK"
 
 
+class Site(Enum):
+    COLONIST = "colonist.io",
+    TWO_SHEEP = "twosheep.io"
+
+
 @dataclass
 class GameMetadata:
     division: Division
+    site: Site
     replay_link: str
     timestamp: datetime
     is_duplicate: bool
@@ -66,6 +73,7 @@ class PlayerScore(NamedTuple):
 class GameData:
     metadata: GameMetadata | None
     scores: list[PlayerScore]
+    raw_json: dict[str, Any] | None
 
     def serialize(self):
         if self.metadata is None:
@@ -101,6 +109,10 @@ class GameData:
 
         for player in self.scores:
             msg.append(f"{player.display_name}: {player.score} VPs")
+        
+        if self.raw_json is not None:
+            msg.append("")
+            msg.append(f"*{generate_trivia(self.raw_json)}*")
 
         return "\n".join(msg)
 

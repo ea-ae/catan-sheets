@@ -1,6 +1,6 @@
 from datetime import datetime
 from dotenv import load_dotenv
-from shared import Division, GameData, GameMetadata, PlayerScore, get_discord_user
+from shared import Division, GameData, GameMetadata, PlayerScore, Site, get_discord_user
 import sheets
 
 from functools import cache
@@ -31,7 +31,7 @@ def twosheep(message: discord.Message, div: Division):
     played_at_epoch = data["c"]
     played_at = datetime.fromtimestamp(played_at_epoch, tz=pytz.UTC)
 
-    game_data = GameData(metadata=None, scores=[])
+    game_data = GameData(metadata=None, scores=[], raw_json=None)  # no trivia support
 
     for player in data["p"].values():
         name = player["n"]
@@ -44,9 +44,10 @@ def twosheep(message: discord.Message, div: Division):
 
     game_data.metadata = GameMetadata(
         division=div,
+        site=Site.TWO_SHEEP,
         replay_link=f"https://twosheep.io/replay/{slug_matches[0]}",
         timestamp=played_at,
-        is_duplicate=False,
+        is_duplicate=False
     )
 
     sheets.update(gapi_creds, div, game_data)

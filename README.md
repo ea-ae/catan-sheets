@@ -10,4 +10,4 @@
 
 # Contributing
 
-Try to (somewhat) respect mypy types. Use black formatter.
+Try to (somewhat) respect mypy types (unless you're lazy). Use black formatter.

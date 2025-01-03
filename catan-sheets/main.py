@@ -31,10 +31,6 @@ CK_CHANNELS = [1324500081189060729]
 ERR_CHANNEL = 1324202972997091480
 
 
-handled_replay_messages: set[int] = set()
-message_id_to_replay_owner: dict[int, str] = {}
-
-
 # class GameView(discord.ui.View):
 #     @discord.ui.button(label="Delete", style=discord.ButtonStyle.danger)
 #     async def on_delete(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -134,7 +130,6 @@ async def process_message(message: discord.Message):
 
     await message.add_reaction("🤖")
 
-    handled_replay_messages.add(message.id)
     await message.channel.send(
         game_data.message(author=message.author), reference=message
     )

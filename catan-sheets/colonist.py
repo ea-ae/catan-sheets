@@ -1,4 +1,4 @@
-from shared import Division, GameData, GameMetadata, PlayerScore, get_discord_user
+from shared import Division, GameData, GameMetadata, PlayerScore, Site, get_discord_user
 import sheets
 
 from datetime import datetime
@@ -35,7 +35,7 @@ def colonist(message: discord.Message, div: Division) -> GameData | None:
     members = message.guild.members  # type: ignore
     gapi_creds = sheets.get_creds()
 
-    game_data = GameData(metadata=None, scores=[])
+    game_data = GameData(metadata=None, scores=[], raw_json=data)
 
     for player in game_players.values():
         name = colors_to_names[player["color"]]
@@ -74,9 +74,10 @@ def colonist(message: discord.Message, div: Division) -> GameData | None:
 
     game_data.metadata = GameMetadata(
         division=div,
+        site=Site.COLONIST,
         replay_link=f"https://colonist.io/replay/{slug_matches[0]}",
         timestamp=played_at,
-        is_duplicate=False,
+        is_duplicate=False
     )
 
     sheets.update(gapi_creds, div, game_data)
