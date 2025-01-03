@@ -79,7 +79,7 @@ TRIVIAS = [
 
     Trivia(
         f=lambda p, json: to_stats(json)["players"][p]["victoryPoints"].get("2", 0),
-        description=lambda name, x: f"{name} won with {x} VP devs bought",
+        description=lambda name, x: f"{name} bought {x} VP devs",
         fun_factor=lambda x: x * 10 if x >=4 else 0
     ),
 ]
