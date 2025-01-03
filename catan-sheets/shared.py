@@ -96,7 +96,7 @@ class GameData:
 
         played_at_epoch = int(self.metadata.timestamp.timestamp())
         msg.append(
-            f"**Division {self.metadata.division.value}** [game]({self.metadata.replay_link}) posted by {author.mention} (played <t:{played_at_epoch}>)"
+            f"**Division {self.metadata.division.value}** [game]({self.metadata.replay_link}) posted by @{author.name} (played <t:{played_at_epoch}>)"
         )
 
         if self.metadata.is_old_game:
