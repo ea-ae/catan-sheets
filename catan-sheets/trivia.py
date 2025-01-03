@@ -30,12 +30,7 @@ TRIVIAS = [
     Trivia(
         f=lambda p, json: to_stats(json)["resourceStats"][p]["rollingLoss"],
         description=lambda name, x: f"{name} lost {x} resources by getting 7'd out",
-        fun_factor=lambda x: x * 0.5
-    ),
-    Trivia(
-        f=lambda p, json: to_stats(json)["resourceStats"][p]["rollingLoss"],
-        description=lambda name, x: f"{name} lost {x} resources by getting 7'd out",
-        fun_factor=lambda x: x * 0.5
+        fun_factor=lambda x: x * 0.3
     ),
 
     Trivia(
@@ -43,11 +38,11 @@ TRIVIAS = [
         description=lambda name, x: f"{name} traded a net profit of {x} cards",
         fun_factor=lambda x: x * 0.3
     ),
-    Trivia(
-        f=lambda p, json: to_stats(json)["resourceStats"][p]["tradeLoss"] - to_stats(json)["resourceStats"][p]["tradeIncome"],
-        description=lambda name, x: f"{name} traded a net loss of {x} cards",
-        fun_factor=lambda x: x * 0.3
-    ),
+    # Trivia(
+    #     f=lambda p, json: to_stats(json)["resourceStats"][p]["tradeLoss"] - to_stats(json)["resourceStats"][p]["tradeIncome"],
+    #     description=lambda name, x: f"{name} traded a net loss of {x} cards",
+    #     fun_factor=lambda x: x * 0.3
+    # ),
 
     Trivia(
         f=lambda p, json: to_stats(json)["activityStats"][p]["resourceIncomeBlocked"],
