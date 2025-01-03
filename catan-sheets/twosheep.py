@@ -11,7 +11,7 @@ import os
 import pytz
 
 
-TWOSHEEP_REPLAY_REGEX = r"twosheep\.io\/replay\/([^? &\/\\()[\]\n]+)"
+TWOSHEEP_REPLAY_REGEX = r"twosheep\.io\/replay\/([A-Za-z0-9-_]+)"
 
 HEADERS = {"Content-Type": "application/json"}
 

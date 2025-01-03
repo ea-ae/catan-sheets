@@ -7,7 +7,7 @@ import discord
 import requests
 
 
-COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([^? &\/\\()[\]\n]+)"
+COLONIST_REPLAY_REGEX = r"colonist\.io\/replay\/([A-Za-z0-9-_]+)"
 
 HEADERS = {
     "Content-Type": "application/json",
