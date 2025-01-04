@@ -17,7 +17,7 @@ class Division(Enum):
 
 
 class Site(Enum):
-    COLONIST = ("colonist.io",)
+    COLONIST = "colonist.io",
     TWO_SHEEP = "twosheep.io"
 
 
