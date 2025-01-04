@@ -84,10 +84,14 @@ def update(creds, div: Division, game_data: GameData):
     existing_rows = res.get("values", [])
 
     if len(existing_rows) > 0 and len(existing_rows[0]) > 0:
-        is_duplicate = game_data.metadata.replay_link in [
+        is_duplicate_url = game_data.metadata.replay_link in [
             row[0] for row in existing_rows
         ]
-        game_data.metadata.is_duplicate = is_duplicate
+        # replay url differs based on player perspective, so check timestamps as well!
+        is_duplicate_timestamp = game_data.metadata.timestamp.isoformat() in [
+            row[0] for row in existing_rows
+        ]
+        game_data.metadata.is_duplicate = is_duplicate_url or is_duplicate_timestamp
 
     first_empty_row = STARTING_DATA_ENTRY_ROW + len(existing_rows)
     last_col = add_char(metadata_col, 3)
