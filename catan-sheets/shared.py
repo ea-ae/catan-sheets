@@ -1,10 +1,12 @@
 from trivia import generate_trivia
+import db
 
 import discord
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, NamedTuple, Sequence
+from sqlalchemy.orm.session import Session
 import pytz
 
 
@@ -15,7 +17,7 @@ class Division(Enum):
 
 
 class Site(Enum):
-    COLONIST = "colonist.io",
+    COLONIST = ("colonist.io",)
     TWO_SHEEP = "twosheep.io"
 
 
@@ -45,6 +47,7 @@ class GameMetadata:
 
 
 class PlayerScore(NamedTuple):
+    username: str
     display_name: str
     scoreboard_name: str
     score: int
@@ -53,19 +56,20 @@ class PlayerScore(NamedTuple):
     def from_names(
         discord_user: discord.Member | None,
         discord_name: str | None,
-        name: str,
+        username: str,
         score: int,
     ):
-        fallback_name = discord_name if discord_name else name
-        display_name = (
-            f"{name} ({'@' + fallback_name})"
-        )
+        fallback_name = discord_name if discord_name else username
+        display_name = f"{username} ({'@' + fallback_name})"
         scoreboard_name = (
             discord_name if discord_name else fallback_name + " (FALLBACK)"
         )
 
         return PlayerScore(
-            display_name=display_name, scoreboard_name=scoreboard_name, score=score
+            username=username,
+            display_name=display_name,
+            scoreboard_name=scoreboard_name,
+            score=score,
         )
 
 
@@ -74,6 +78,30 @@ class GameData:
     metadata: GameMetadata | None
     scores: list[PlayerScore]
     raw_json: dict[str, Any] | None
+
+    def persist(self, session: Session):
+        if self.metadata is None:
+            raise Exception(f"metadata is mandatory for persistence")
+
+        game = db.Game(
+            div=self.metadata.division,
+            site=self.metadata.site,
+            replay_link=self.metadata.replay_link,
+            timestamp=self.metadata.timestamp,
+            is_duplicate=self.metadata.is_duplicate,
+            is_old_game=self.metadata.is_old_game,
+            game_json=self.raw_json,
+        )
+        session.add(game)
+        for player_score in self.scores:
+            session.add(
+                db.GamePlayer(
+                    name=player_score.username,
+                    score=player_score.score,
+                    game=game,
+                    player=None  # temp / todo migrate, we don't have proper mappings yet
+                )
+            )
 
     def serialize(self):
         if self.metadata is None:
@@ -84,7 +112,15 @@ class GameData:
 
         # zip one metadata element per scores row to the start
         return [
-            [md_row] + [score.scoreboard_name, min(score.score, 13) if self.metadata.division == Division.CK else min(score.score, 10)]
+            [md_row]
+            + [
+                score.scoreboard_name,
+                (
+                    min(score.score, 13)
+                    if self.metadata.division == Division.CK
+                    else min(score.score, 10)
+                ),
+            ]
             for md_row, score in zip(self.metadata.serialize(), self.scores)
         ]
 
@@ -109,7 +145,7 @@ class GameData:
 
         for player in self.scores:
             msg.append(f"{player.display_name}: {player.score} VPs")
-        
+
         if self.raw_json is not None:
             msg.append("")
             msg.append(f"*{generate_trivia(self.raw_json)}*")
