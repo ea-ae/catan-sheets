@@ -103,8 +103,9 @@ async def process_message(message: discord.Message):
         embed = discord.Embed()
         embed.set_image(url="https://i.imgur.com/qLWL6N8.png")
         await message.channel.send(
-            "Please post a replay link (in a new message) by going to 'Return to Map' on the top right from the end game screen. To acquire the link, press the share button in the replay view.\
-            \nPS: In case the lobby for this game was created manually by a non-premium user, the bot can't view it. In that case, just disregard this message.",
+            "Please post a properly formatted replay link by pressing 'Return to Map' on the top right of the end game screen. Then, press share button in the top-right to copy the replay link.\
+            \nIf you're on mobile, the share button is only visible with vertical orientation.\
+            \n\nPS: If you're having technical issues or the lobby for this game was created manually by a non-premium user, just disregard this warning; the standings team will handle your game manually.",
             reference=message,
             embed=embed,
             delete_after=180.0
@@ -117,10 +118,11 @@ async def process_message(message: discord.Message):
     if game_data is None:
         # detect if message contains an image embed
         if len(message.attachments) > 0:
+            err_msg = "Please include a replay link with your game results (in a new message).\nIn case you already did so in a previous message, you can ignore this warning."
             if message.author.id in naughty_list:
-                await message.channel.send("Include a replay link with your results (in a new message).", reference=message, delete_after=180.0)
+                await message.channel.send(f"{err_msg} >:(", reference=message, delete_after=180.0)
             else:
-                await message.channel.send("Please include a replay link with your results (in a new message).", reference=message, delete_after=180.0)
+                await message.channel.send(err_msg, reference=message, delete_after=180.0)
                 naughty_list.append(message.author.id)
 
         return  # doesn't contain any colonist/twosheep replay links
