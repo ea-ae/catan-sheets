@@ -17,7 +17,7 @@ class Player(Base):
     __tablename__ = "players"
 
     discord_id = Column(String)
-    colonist_username = Column(String)
+    colonist_username = Column(String)  # tables? what are tables
     twosheep_username = Column(String)
 
     games: Mapped[List[GamePlayer]] = relationship(back_populates="player")
@@ -30,7 +30,7 @@ class Game(Base):
     site = Column(Enum(Site))
     replay_link = Column(String, nullable=False)
     timestamp = Column(TIMESTAMP, nullable=False)
-    is_duplicate = Column(Boolean, nullable=False)
+    is_duplicate = Column(Boolean, nullable=False)  # denormalizin' like there's no tomorro'
     is_old_game = Column(Boolean, nullable=False)
     game_json = Column(JSON)
 
