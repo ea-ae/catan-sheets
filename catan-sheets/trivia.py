@@ -17,12 +17,12 @@ TRIVIAS = [
     Trivia[float](
         f=lambda p, json: to_stats(json)["resourceStats"][p]["robbingLoss"],
         description=lambda name, x: f"{name} got robbed {x} times",
-        fun_factor=lambda x: x * 0.7,
+        fun_factor=lambda x: x * 0.4,
     ),
     Trivia[float](
         f=lambda p, json: to_stats(json)["resourceStats"][p]["robbingIncome"],
         description=lambda name, x: f"{name} robbed others {x} times",
-        fun_factor=lambda x: x * 0.5,
+        fun_factor=lambda x: x * 0.4,
     ),
     Trivia[float](
         f=lambda p, json: to_stats(json)["resourceStats"][p]["rollingLoss"],
@@ -38,7 +38,7 @@ TRIVIAS = [
     Trivia[float](
         f=lambda p, json: to_stats(json)["activityStats"][p]["resourceIncomeBlocked"],
         description=lambda name, x: f"{name} lost {x} resources to blocked tiles",
-        fun_factor=lambda x: x * 0.2,
+        fun_factor=lambda x: x * 0.25,
     ),
     Trivia[float](
         f=lambda p, json: to_stats(json)["diceStats"][0],
@@ -73,7 +73,7 @@ TRIVIAS = [
     Trivia[float](
         f=lambda p, json: to_stats(json)["players"][p]["victoryPoints"].get("2", 0),
         description=lambda name, x: f"{name} bought {x} VP devs",
-        fun_factor=lambda x: x * 10 if x >= 4 else 0,
+        fun_factor=lambda x: x * 10 if x >= 4 else x * 1,
     ),
 ]
 
