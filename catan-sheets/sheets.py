@@ -7,16 +7,16 @@ from functools import lru_cache
 SCOPE = "https://www.googleapis.com/auth/spreadsheets"
 SERVICE_ACCOUNT_KEY_FILE = "service_account_key.json"
 
+DATA_SPREADSHEET_ID = "1PxYlC7OC0gAeBvfDRknpPCG9PJW63EUZJ2S2gCxzHwQ"
 BASE_SPREADSHEET_ID = "1U7uKsuO2l1SxT3qZSRmdRdX1apjm81pRsnYtFcxMGQQ"
 CK_SPREADSHEET_ID = "1gPnHor5-JuyZmDrb-0MbPBMqwzjaFEy-BDXOFW1Eiyo"
 
-DIV_COLS = {Division.DIV1: "A", Division.DIV2: "H", Division.CK: "A"}
+DIV_COLS = {Division.DIV1: "A", Division.DIV2: "H", Division.CK: "O"}
 
 STARTING_DATA_ENTRY_ROW = 4
-DATA_ENTRY_TAB_NAME = "Internal"
-NAMES_TAB_NAME = "'All Divisions Players'"
-BASE_NAMES_RANGES = ["B4:C", "F4:G"]
-CK_NAMES_RANGES = ["C4:D"]
+DATA_ENTRY_TAB_NAME = "AEON"
+NAMES_TAB_NAME = "Respuestas"
+NAMES_RANGES = ["B3:C"]
 
 
 def get_creds():
@@ -38,15 +38,13 @@ def fetch_member_names(creds, div: Division):
     service = get_service(creds)
     member_names = {}
 
-    name_ranges = CK_NAMES_RANGES if div == Division.CK else BASE_NAMES_RANGES
-
-    for names_range in name_ranges:
+    for names_range in NAMES_RANGES:
         range_to_read = f"{NAMES_TAB_NAME}!{names_range}"
         # first column is discord name, second is colonist
         result = (
             service.spreadsheets()
             .values()
-            .get(spreadsheetId=BASE_SPREADSHEET_ID, range=range_to_read)
+            .get(spreadsheetId=DATA_SPREADSHEET_ID, range=range_to_read)
             .execute()
         )
         values = result.get("values", [])
@@ -77,9 +75,8 @@ def update(creds, div: Division, game_data: GameData):
     range_to_read = (
         f"{DATA_ENTRY_TAB_NAME}!{metadata_col}{STARTING_DATA_ENTRY_ROW}:{name_col}"
     )
-    spreadsheet_id = CK_SPREADSHEET_ID if div == Division.CK else BASE_SPREADSHEET_ID
     res = (
-        sheet.values().get(spreadsheetId=spreadsheet_id, range=range_to_read).execute()
+        sheet.values().get(spreadsheetId=DATA_SPREADSHEET_ID, range=range_to_read).execute()
     )
     existing_rows = res.get("values", [])
 
@@ -103,7 +100,7 @@ def update(creds, div: Division, game_data: GameData):
     (
         sheet.values()
         .update(
-            spreadsheetId=spreadsheet_id,
+            spreadsheetId=DATA_SPREADSHEET_ID,
             range=range_to_write,
             valueInputOption="RAW",
             body={"values": game_data.serialize()},
