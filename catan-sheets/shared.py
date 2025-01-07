@@ -48,26 +48,25 @@ class GameMetadata:
 
 class PlayerScore(NamedTuple):
     username: str
-    display_name: str
+    discord_name: str | None
     scoreboard_name: str
     score: int
 
     @staticmethod
     def from_names(
-        discord_user: discord.Member | None,
+        _discord_user: discord.Member | None,
         discord_name: str | None,
         username: str,
         score: int,
     ):
         fallback_name = discord_name if discord_name else username
-        display_name = f"{username} ({'@' + fallback_name})"
         scoreboard_name = (
             discord_name if discord_name else fallback_name + " (FALLBACK)"
         )
 
         return PlayerScore(
             username=username,
-            display_name=display_name,
+            discord_name=discord_name,
             scoreboard_name=scoreboard_name,
             score=score,
         )
@@ -144,7 +143,10 @@ class GameData:
         msg.append("")
 
         for player in self.scores:
-            msg.append(f"{player.display_name}: {player.score} VPs")
+            if player.discord_name is not None:
+                msg.append(f"{player.username} (@{player.discord_name}): {player.score} VPs")
+            else:
+                msg.append(f"{player.username}: {player.score} VPs")
 
         if self.raw_json is not None:
             msg.append("")

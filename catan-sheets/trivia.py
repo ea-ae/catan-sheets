@@ -32,8 +32,8 @@ TRIVIAS = [
     Trivia[float](
         f=lambda p, json: to_stats(json)["resourceStats"][p]["tradeIncome"]
         - to_stats(json)["resourceStats"][p]["tradeLoss"],
-        description=lambda name, x: f"{name} traded a net profit of {x} cards",
-        fun_factor=lambda x: x * 2,
+        description=lambda name, x: f"{name} traded a net profit of {x} cards (in spite of port trades!)",
+        fun_factor=lambda x: x * 2.5,
     ),
     Trivia[float](
         f=lambda p, json: to_stats(json)["activityStats"][p]["resourceIncomeBlocked"],
