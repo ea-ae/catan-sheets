@@ -57,14 +57,17 @@ async def process_message(message: discord.Message):
         return
 
     if message.content == "ping":
-        await message.channel.send("pong", reference=message)  # type: ignore
+        if message.author.id == 615673435514863708:
+            await message.channel.send("fuck you", reference=message)  # type: ignore
+        else:
+            await message.channel.send("pong", reference=message)  # type: ignore
         return
 
     if "gameId=" in message.content:
         embed = discord.Embed()
         embed.set_image(url="https://i.imgur.com/qLWL6N8.png")
         await message.channel.send(
-            "Please post a properly formatted replay link by pressing 'Return to Map' on the top right of the end game screen. Then, press share button in the top-right to copy the replay link.\
+            "Please post a properly formatted replay link (in a new message) by pressing 'Return to Map' on the top right of the end game screen. Then, press share button in the top-right to copy the replay link.\
             \nIf you're on mobile, the share button is only visible with vertical orientation.\
             \n\nPS: If you're having technical issues or the lobby for this game was created manually by a non-premium user, just disregard this warning; the standings team will handle your game manually.",
             reference=message,
