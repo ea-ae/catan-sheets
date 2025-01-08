@@ -38,6 +38,7 @@ async def on_message(message: discord.Message):
         err = traceback.format_exc()
         print(err)
         await bot.get_channel(ERR_CHANNEL).send(f"Error: {err}")  # type: ignore
+        await message.channel.send(f"Processing failed due to error.\n\n{str(err)}")
 
 
 naughty_list = collections.deque(maxlen=10)
@@ -58,7 +59,7 @@ async def process_message(message: discord.Message):
 
     if message.content == "ping":
         if message.author.id == 615673435514863708:
-            await message.channel.send("fuck you", reference=message)  # type: ignore
+            await message.channel.send("this ain't no god damn ping pong table, this is real life", reference=message)  # type: ignore
         else:
             await message.channel.send("pong", reference=message)  # type: ignore
         return
