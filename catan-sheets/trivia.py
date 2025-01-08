@@ -75,6 +75,12 @@ TRIVIAS = [
         description=lambda name, x: f"{name} bought {x} VP devs",
         fun_factor=lambda x: x * 10 if x >= 4 else x * 1,
     ),
+    Trivia[float](
+        f=lambda p, json: to_stats(json)["players"][p]["victoryPoints"].get("3", 0)
+        + to_stats(json)["players"][p]["victoryPoints"].get("4", 0),
+        description=lambda name, x: f"{name} double played this game",
+        fun_factor=lambda x: 5.5 if x == 2 else 0,
+    ),
 ]
 
 
