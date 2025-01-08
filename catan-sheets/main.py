@@ -68,8 +68,11 @@ async def process_message(message: discord.Message):
         return
     
     if message.content == "ding":
+        if message.author.id == 615673435514863708:
+            await message.channel.send("do i look like a doorbell to you", reference=message)  # type: ignore
+        else:
             await message.channel.send("dong", reference=message)
-            return
+        return
 
     if "gameId=" in message.content:
         embed = discord.Embed()
