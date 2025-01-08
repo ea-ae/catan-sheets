@@ -39,7 +39,8 @@ async def on_message(message: discord.Message):
             tb = traceback.format_exc()
             print(tb)
             await bot.get_channel(ERR_CHANNEL).send(f"Error: {tb}")  # type: ignore
-            await message.channel.send(f"Processing failed due to error.\n\n{str(err)}")
+            # await message.channel.send(f"Processing failed due to error.\n\n{str(err)}")
+            await message.channel.send(f"Processing failed due to error.")
         except Exception as e:
             print('double error', e)
 
