@@ -34,11 +34,14 @@ async def on_ready():
 async def on_message(message: discord.Message):
     try:
         await process_message(message)
-    except Exception:
-        err = traceback.format_exc()
-        print(err)
-        await bot.get_channel(ERR_CHANNEL).send(f"Error: {err}")  # type: ignore
-        await message.channel.send(f"Processing failed due to error.\n\n{str(err)}")
+    except Exception as err:
+        try:
+            tb = traceback.format_exc()
+            print(tb)
+            await bot.get_channel(ERR_CHANNEL).send(f"Error: {tb}")  # type: ignore
+            await message.channel.send(f"Processing failed due to error.\n\n{str(err)}")
+        except Exception as e:
+            print('double error', e)
 
 
 naughty_list = collections.deque(maxlen=10)
