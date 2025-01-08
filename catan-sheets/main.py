@@ -69,6 +69,7 @@ async def process_message(message: discord.Message):
     
     if message.content == "ding":
             await message.channel.send("dong", reference=message)
+            return
 
     if "gameId=" in message.content:
         embed = discord.Embed()
