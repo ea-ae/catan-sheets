@@ -62,9 +62,7 @@ async def process_message(message: discord.Message):
         return
 
     if message.content == "ping":
-        if message.author.id == 615673435514863708:
-            await message.channel.send("this ain't no god damn ping pong table, this is real life", reference=message)  # type: ignore
-        else:
+        if message.author.id != 615673435514863708:
             await message.channel.send("pong", reference=message)  # type: ignore
         return
     
