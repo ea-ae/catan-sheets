@@ -48,13 +48,14 @@ class GameMetadata:
 
 class PlayerScore(NamedTuple):
     username: str
+    discord_user: discord.Member | None
     discord_name: str | None
     scoreboard_name: str
     score: int
 
     @staticmethod
     def from_names(
-        _discord_user: discord.Member | None,
+        discord_user: discord.Member | None,
         discord_name: str | None,
         username: str,
         score: int,
@@ -66,6 +67,7 @@ class PlayerScore(NamedTuple):
 
         return PlayerScore(
             username=username,
+            discord_user=discord_user,
             discord_name=discord_name,
             scoreboard_name=scoreboard_name,
             score=score,
@@ -143,7 +145,9 @@ class GameData:
         msg.append("")
 
         for player in self.scores:
-            if player.discord_name is not None:
+            if player.discord_user is not None:
+                msg.append(f"{player.username} ({player.discord_user.mention}): {player.score} VPs")
+            elif player.discord_name is not None:
                 msg.append(f"{player.username} (@{player.discord_name}): {player.score} VPs")
             else:
                 msg.append(f"{player.username}: {player.score} VPs")
