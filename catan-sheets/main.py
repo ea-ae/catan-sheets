@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import os
 import traceback
 import collections
+import random
 
 
 load_dotenv()
@@ -63,7 +64,12 @@ async def process_message(message: discord.Message):
 
     if message.content == "ping":
         if message.author.id != 615673435514863708:
-            await message.channel.send("pong", reference=message)  # type: ignore
+            await message.channel.send("pong", reference=message)
+        else:
+            if random.random() < 0.1:
+                await message.channel.send("fuck you with a cherry on top", reference=message)
+            else:
+                await message.channel.send("fuck you", reference=message)
         return
     
     if message.content == "ding":
