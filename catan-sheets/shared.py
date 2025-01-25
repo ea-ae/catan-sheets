@@ -31,7 +31,7 @@ class GameMetadata:
 
     @property
     def is_old_game(self):
-        return self.timestamp < datetime.now(tz=pytz.UTC) - timedelta(hours=4)
+        return self.timestamp < datetime.now(tz=pytz.UTC) - timedelta(hours=3)
 
     @property
     def has_warning(self):
